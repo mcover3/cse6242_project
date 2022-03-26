@@ -1,5 +1,7 @@
 *sandbox*
-*.csv
+*raw.csv
+*Realtor*
+*StatsAmerica*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

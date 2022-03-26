@@ -105,8 +105,12 @@ df["personalized_score"] = pd.Series(
     ]
 )
 
-if df.personalized_score.max() != 0:
-    df.personalized_score *= 10/df.personalized_score.max()
+# if df.personalized_score.max() != 0:
+    # df.personalized_score += df.personalized_score.min()
+    # df.personalized_score *= 10/df.personalized_score.max()
+    # df.personalized_score = 
+
+df.personalized_score = df.personalized_score.rank(pct=True)*10
 
 st.plotly_chart(county_choropleth(df, var_filter="personalized_score"))
 

@@ -61,8 +61,6 @@ big5_data["select-bool"] = st.radio("""
 Have you taken the Big 5 Personality test and know your percentile scores?
 """, ["Yes", "No"], index=1)
 
-# st.slider("Importance of feature X, scale 1-5", 0, 5)
-
 importance_scale = {
     # scale text: scale weight
     "not important to me": 0,
@@ -87,9 +85,8 @@ else:
         big5_data[f"{trait}-score"] = 0
         big5_data[f"{trait}-colname"] = f"{trait}_sc_norm"
         big5_data[f"{trait}-importance"] = 0
-# st.download_button("Download your recommendations", 0)
 
-# def personalized_score(big5_data, factor_dict):
+
 
 df["personalized_score"] = pd.Series(
     [
@@ -104,11 +101,6 @@ df["personalized_score"] = pd.Series(
         for x in df.index
     ]
 )
-
-# if df.personalized_score.max() != 0:
-    # df.personalized_score += df.personalized_score.min()
-    # df.personalized_score *= 10/df.personalized_score.max()
-    # df.personalized_score = 
 
 df.personalized_score = df.personalized_score.rank(pct=True)*10
 
@@ -129,6 +121,8 @@ for top_county, personalized_score in df_sorted[["description_pop", "personalize
 
 for _ in range(4):
     st.write(" ")
+
+# st.download_button("Download your recommendations", 0)
 
 with st.expander("Sources"):
     st.write("Source1")

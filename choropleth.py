@@ -4,7 +4,7 @@ import pandas as pd
 from urllib.request import urlopen
 import json
 
-def county_choropleth(df):
+def county_choropleth(df, var_filter):
 
     with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json') as response:
         counties = json.load(response)
@@ -14,9 +14,10 @@ def county_choropleth(df):
 
     fig = px.choropleth(
         df, geojson=counties, locations='fips', scope="usa",
-        color="unemp", color_continuous_scale = "thermal", range_color = (0, 12)
+        color=var_filter, color_continuous_scale = "mint", range_color = (0, 10),
+        labels={"personalized_score": "Personalized Score"},
         )
-        
+
 
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
     

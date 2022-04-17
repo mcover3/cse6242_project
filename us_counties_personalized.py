@@ -171,7 +171,7 @@ df.personalized_score = (df.personalized_score.rank(pct=True)*10).round(2)
 
 county_show_cutoff = st.number_input(
     "Show me counties with a personalized score greater than:",
-    0.0, 9.9, value=9.0
+    0.0, 9.9, value=0.0
 )
 # remove counties with a personalized score < 50%
 df = df.drop(
@@ -201,6 +201,6 @@ for _ in range(4):
 
 # st.download_button("Download your recommendations", 0)
 
-with st.expander("Sources"):
-    st.write("Source1")
-    st.write("Source2")
+# with st.expander("Sources"):
+#     st.write("Source1")
+#     st.write("Source2")

@@ -11,11 +11,17 @@ def county_choropleth(df, var_filter):
 
     # color continuous scales that might fly well:
     # inferno, oxy, mint, *spectral*, deep, *thermal*
-
     fig = px.choropleth(
         df, geojson=counties, locations='fips', scope="usa",
         color=var_filter, color_continuous_scale = "mint", range_color = (0, 10),
-        labels={"personalized_score": "Personalized Score"},
+        labels={"personalized_score": "Personalized Score",
+        "description_pop": "Location",
+        "predicted_price": "Forecasted Median Housing Price"
+        },
+        hover_data=[
+            df.description_pop, df.personalized_score,
+            df.predicted_price
+            ]
         )
 
 

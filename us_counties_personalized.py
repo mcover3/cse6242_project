@@ -1,36 +1,42 @@
+from sklearn import cluster
 import streamlit as st
 
 import plotly.express as px
-import pandas as pd, numpy as np
+import pandas as pd, numpy as np, re
 
 from collections import defaultdict
 
 from choropleth import county_choropleth
 
-df = pd.read_csv("cluster_merge_clean_normalized.csv", dtype={"fips": str})
+df = pd.read_csv("county_data_final.csv", dtype={"fips": str})
 
 st.header("US County Explorer")
 st.subheader("Tailor your next move or trip based on your preferences and personality.")
 
 factor_colname_dict = {
-    "Belief in Science": 'Belief In Science_sc_norm',
-    "Collectivism": "Collectivism_sc_norm",
-    "Employment Rate": "Employment Rate_sc_norm",
+    "Educated": "educated_norm",
+    "Low Unemployment": "employed_norm",
     "Entrepreneurship": "Entrepreneurship_sc_norm",
-    "Gender Equality": "Gender Equality_sc_norm",
     "Income Mobility": "Income Mobility_sc_norm",
     "Income Per Capita": "Income Per Capita_sc_norm",
+    "Left-Wing": "left_wing_norm",
+    "Right-Wing": "right_wing_norm",
+    "Gender Equality": "Gender Equality_sc_norm",
     "Religious": "Religiosity_sc_norm",
+    "Belief in Science": 'Belief In Science_sc_norm',
     "Child-friendly": 'prop_population_under_18_pop_norm',
     "Working-age People": 'prop_population_18-54_pop_norm',
     "Seniors": 'prop_population_55+_pop_norm',
-    "More Men": 'prop_male_population_pop_norm',
-    "More Women": 'prop_female_population_pop_norm'
+    "Single Men": 'prop_male_population_pop_norm',
+    "Single Women": 'prop_female_population_pop_norm'
 }
 
-factor_colname_dict["Select All"] = list(factor_colname_dict.values())
+# factor_colname_dict["Select All"] = list(factor_colname_dict.values())
 
 factors = list(factor_colname_dict.keys())
+
+# fillna with mean (z-score = 0)
+df[list(factor_colname_dict.values())] = df[list(factor_colname_dict.values())].fillna(0)
 
 st.write("Factors that matter to you (check all that apply):")
 col1, col2, col3 = st.columns(3)
@@ -60,38 +66,86 @@ big5_traits = ["Openness", "Conscientiousness", "Extraversion", "Agreeableness",
 big5_data["select-bool"] = st.radio("""
 Have you taken the Big 5 Personality test and know your percentile scores?
 """, ["Yes", "No"], index=1)
+big5_data["importance"] = 0
+
+budget_data = {}
+budget_data["select-bool"] = st.radio("""
+Do you have a monthly budget for buying or renting?
+""", ["Mortgage Budget", "Rent Budget", "No Thanks"], index=2)
+
+budget_data["budget-value"] = 100000
+budget_data["colname"] = "median_rent"
+
+
+cluster_data = {}
+cluster_data["select-bool"] = st.radio("""
+Which lifestyle best suits you?
+""", ["Star Gazing", "Country Roads", "American Dream", "Big City Life", "Best of Both Worlds", "No Preference"],
+index = 5
+)
+
 
 importance_scale = {
     # scale text: scale weight
     "not important to me": 0,
     "of little importance": 1,
-    "somewhat important": 2,
-    "very important": 4,
-    "absolutely essential": 8
+    "somewhat important": 2.5,
+    "very important": 5,
+    "absolutely essential": 10
+}
+
+big5_importance_scale = {
+    "not important to me": 0,
+    "of little importance": .001,
+    "somewhat important": .003,
+    "very important": .01,
+    "absolutely essential": .075
 }
 
 with st.expander("Factor Importance"):
     for factor in selected_factors:
         factor_dict[factor]["importance"] = importance_scale[st.select_slider(factor, list(importance_scale.keys()))]
+    if big5_data["select-bool"] == "Yes":
+        big5_data["importance"] = big5_importance_scale[st.select_slider("Big 5 Personality Profile", list(big5_importance_scale.keys()))]
+
+
+if budget_data["select-bool"] != "No Thanks":
+    with st.expander("Budget"):
+        budget_type = str.lower(
+            budget_data["select-bool"][
+                :re.search("Budget", budget_data["select-bool"]).start()-1
+                ]
+            )
+        budget_default_val = {
+            "mortgage": 2000,
+            "rent": 700
+        }
+        budget_data["budget-value"] = st.number_input(
+            f"Monthly {budget_type} budget ($/month)", 400, 10000, 
+            value=budget_default_val[budget_type], format="%d"
+        )
+        budget_data["colname"] = f"median_{budget_type}"
+
 
 if big5_data["select-bool"] == "Yes":
     with st.expander("Big 5 Personality Scores"):
         for trait in big5_traits:
-            big5_data[f"{trait}-score"] = st.number_input(f"Trait {trait} percentile (1-99)", 1, 99, value=50, format="%d")
+            big5_data[f"{trait}-score"] = st.number_input(
+                f"Trait {trait} percentile (1-99)", 1, 99, 
+                value=50, format="%d"
+                )
             big5_data[f"{trait}-colname"] = f"{trait}_sc_norm"
-            big5_data[f"{trait}-importance"] = 1
+            # big5_data[f"{trait}-importance"] = 1
 else:
     for trait in big5_traits:
         big5_data[f"{trait}-score"] = 0
         big5_data[f"{trait}-colname"] = f"{trait}_sc_norm"
-        big5_data[f"{trait}-importance"] = 0
-
-
+        # big5_data[f"{trait}-importance"] = 0
 
 df["personalized_score"] = pd.Series(
     [
         np.array([
-            big5_data[f"{trait}-score"]*big5_data[f"{trait}-importance"]*df.loc[x, big5_data[f"{trait}-colname"]]
+            (big5_data[f"{trait}-score"]*big5_data["importance"])*df.loc[x, big5_data[f"{trait}-colname"]]
             for trait in big5_traits
             ]).sum() +
         np.array([
@@ -102,9 +156,32 @@ df["personalized_score"] = pd.Series(
     ]
 )
 
-df.personalized_score = df.personalized_score.rank(pct=True)*10
+# remove counties out of budget
+df = df.drop(
+    df[df[budget_data["colname"]] > budget_data["budget-value"]].index
+)
 
-st.plotly_chart(county_choropleth(df, var_filter="personalized_score"))
+# remove counties not in cluster
+if cluster_data["select-bool"] != "No Preference":
+    df = df.drop(
+        df[df.cluster_label != cluster_data["select-bool"]].index
+    )
+
+df.personalized_score = (df.personalized_score.rank(pct=True)*10).round(2)
+
+county_show_cutoff = st.number_input(
+    "Show me counties with a personalized score greater than:",
+    0.0, 9.9, value=9.0
+)
+# remove counties with a personalized score < 50%
+df = df.drop(
+    df[df.personalized_score <= county_show_cutoff].index
+)
+
+if df.shape[0] != 0:
+    st.plotly_chart(county_choropleth(df, var_filter="personalized_score"))
+else:
+    st.write("**No matches. Please modify preferences.**")
 
 df_sorted = df.sort_values(by="personalized_score", ascending=False)
 

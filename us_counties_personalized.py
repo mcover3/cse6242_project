@@ -1,12 +1,34 @@
-from sklearn import cluster
 import streamlit as st
 
 import plotly.express as px
-import pandas as pd, numpy as np, re
+import pandas as pd, numpy as np, re, json
 
-from collections import defaultdict
+from urllib.request import urlopen
 
-from choropleth import county_choropleth
+def county_choropleth(df, var_filter):
+
+    with urlopen('https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json') as response:
+        counties = json.load(response)
+
+    # color continuous scales that might fly well:
+    # inferno, oxy, mint, *spectral*, deep, *thermal*
+    fig = px.choropleth(
+        df, geojson=counties, locations='fips', scope="usa",
+        color=var_filter, color_continuous_scale = "mint", range_color = (0, 10),
+        labels={"personalized_score": "Personalized Score",
+        "description_pop": "Location",
+        "predicted_price": "Forecasted Median Housing Price"
+        },
+        hover_data=[
+            df.description_pop, df.personalized_score,
+            df.predicted_price
+            ]
+        )
+
+
+    fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
+    
+    return fig
 
 df = pd.read_csv("county_data_final.csv", dtype={"fips": str})
 

@@ -35,6 +35,45 @@ df = pd.read_csv("county_data_final.csv", dtype={"fips": str})
 st.header("US County Explorer")
 st.subheader("Tailor your next move or trip based on your preferences and personality.")
 
+with st.expander("Help & FAQ"):
+    st.subheader("Q: How do I use the US County Explorer?")
+    st.write("""
+    A: \n
+    1) Select the factors that matter to you with the checkboxes.\n
+    2) If you know your Big 5 Personality percentile scores, select "Yes" \
+    and you will be prompted to enter them.\n
+    3) If you have a budget and would like it to be considered to filter out \
+    more expensive counties, select "Mortgage Budget" or "Rent Budget" and \
+    you will be prompted to enter your budget in $/month.\n
+    4) If a lifestyle category feels suitable, select one. Note that counties \
+    under all other lifestyle categories will be filtered out.\n
+    5) Modify the factor importance slider(s) to weigh certain factors more \
+    heavily than others. This greatly impacts your 'personalized score'.\n
+    6) Use the 'personalized score' filter to only be shown counties scored \
+    greater than the value entered.\n
+    7) Explore the choropleth plot. County name, state, personalized score, \
+    and forecasted median housing price are displayed. Please note that the \
+    forecasted median housing price is only available for half of the counties.\n
+    8) Note the top 10 recommended counties. Download your results as a .csv, \
+    if desired. Please consider that counties filtered out will not be included \
+    in the csv, and consequently, there may not be 100 counties available in the .csv.
+    """)
+    st.subheader("Q: What do the lifestyle categories mean (Country Roads, American Dream, etc.)?")
+    st.write("A: ??")
+    st.subheader("Q: How did you determine the lifestyle categories?")
+    st.write("""
+    A: These categories are the result of a clustering analysis performed on \
+    counties across demographic, economic, and personality factors.
+    """)
+    st.subheader("Q: What is the 'personalized score'?")
+    st.write("""
+    A: The personalized score is an aggregated statistic that summarizes your \
+    selected lifestyle preferences into a single figure per county. The counties \
+    are then ranked by that score and subsequently scaled to 0-10.
+    """)
+    st.subheader("Q: Can I provide feedback?")
+    st.write("A: Yes! You can access our Google Form [here](https://docs.google.com/forms/d/e/1FAIpQLSfFyCmytOpEJ9ihBz31MHPUpxxKjUCrIL85TfxcovO5sHIecA/viewform).")
+
 factor_colname_dict = {
     "Educated": "educated_norm",
     "Low Unemployment": "employed_norm",
@@ -90,6 +129,21 @@ Have you taken the Big 5 Personality test and know your percentile scores?
 """, ["Yes", "No"], index=1)
 big5_data["importance"] = 0
 
+if big5_data["select-bool"] == "Yes":
+    with st.expander("Big 5 Personality Scores"):
+        for trait in big5_traits:
+            big5_data[f"{trait}-score"] = st.number_input(
+                f"Trait {trait} percentile (1-99)", 1, 99, 
+                value=50, format="%d"
+                )
+            big5_data[f"{trait}-colname"] = f"{trait}_sc_norm"
+            # big5_data[f"{trait}-importance"] = 1
+else:
+    for trait in big5_traits:
+        big5_data[f"{trait}-score"] = 0
+        big5_data[f"{trait}-colname"] = f"{trait}_sc_norm"
+        # big5_data[f"{trait}-importance"] = 0
+
 budget_data = {}
 budget_data["select-bool"] = st.radio("""
 Do you have a monthly budget for buying or renting?
@@ -97,39 +151,6 @@ Do you have a monthly budget for buying or renting?
 
 budget_data["budget-value"] = 100000
 budget_data["colname"] = "median_rent"
-
-
-cluster_data = {}
-cluster_data["select-bool"] = st.radio("""
-Which lifestyle best suits you?
-""", ["Star Gazing", "Country Roads", "American Dream", "Big City Life", "Best of Both Worlds", "No Preference"],
-index = 5
-)
-
-
-importance_scale = {
-    # scale text: scale weight
-    "not important to me": 0,
-    "of little importance": 1,
-    "somewhat important": 2.5,
-    "very important": 5,
-    "absolutely essential": 10
-}
-
-big5_importance_scale = {
-    "not important to me": 0,
-    "of little importance": .001,
-    "somewhat important": .003,
-    "very important": .01,
-    "absolutely essential": .075
-}
-
-with st.expander("Factor Importance"):
-    for factor in selected_factors:
-        factor_dict[factor]["importance"] = importance_scale[st.select_slider(factor, list(importance_scale.keys()))]
-    if big5_data["select-bool"] == "Yes":
-        big5_data["importance"] = big5_importance_scale[st.select_slider("Big 5 Personality Profile", list(big5_importance_scale.keys()))]
-
 
 if budget_data["select-bool"] != "No Thanks":
     with st.expander("Budget"):
@@ -148,21 +169,36 @@ if budget_data["select-bool"] != "No Thanks":
         )
         budget_data["colname"] = f"median_{budget_type}"
 
+cluster_data = {}
+cluster_data["select-bool"] = st.radio("""
+Which lifestyle best suits you?
+""", ["Star Gazing", "Country Roads", "American Dream", "Big City Life", "Best of Both Worlds", "No Preference"],
+index = 5
+)
 
-if big5_data["select-bool"] == "Yes":
-    with st.expander("Big 5 Personality Scores"):
-        for trait in big5_traits:
-            big5_data[f"{trait}-score"] = st.number_input(
-                f"Trait {trait} percentile (1-99)", 1, 99, 
-                value=50, format="%d"
-                )
-            big5_data[f"{trait}-colname"] = f"{trait}_sc_norm"
-            # big5_data[f"{trait}-importance"] = 1
-else:
-    for trait in big5_traits:
-        big5_data[f"{trait}-score"] = 0
-        big5_data[f"{trait}-colname"] = f"{trait}_sc_norm"
-        # big5_data[f"{trait}-importance"] = 0
+importance_scale = {
+    # scale text: scale weight
+    "not important to me": 0,
+    "of little importance": 1,
+    "somewhat important": 2.5,
+    "very important": 5,
+    "absolutely essential": 10
+}
+
+big5_importance_scale = {
+    "not important to me": 0,
+    "of little importance": .001,
+    "somewhat important": .003,
+    "very important": .01,
+    "absolutely essential": .075
+}
+
+st.write("Be sure to modify how important each factor is to you:")
+with st.expander("Factor Importance"):
+    for factor in selected_factors:
+        factor_dict[factor]["importance"] = importance_scale[st.select_slider(factor, list(importance_scale.keys()))]
+    if big5_data["select-bool"] == "Yes":
+        big5_data["importance"] = big5_importance_scale[st.select_slider("Big 5 Personality Profile", list(big5_importance_scale.keys()))]
 
 df["personalized_score"] = pd.Series(
     [
@@ -191,9 +227,11 @@ if cluster_data["select-bool"] != "No Preference":
 
 df.personalized_score = (df.personalized_score.rank(pct=True)*10).round(2)
 
+df.personalized_score = df.personalized_score.fillna(0)
+
 county_show_cutoff = st.number_input(
     "Show me counties with a personalized score greater than:",
-    0.0, 9.9, value=0.0
+    0.0, 9.9, value=2.5
 )
 # remove counties with a personalized score < 50%
 df = df.drop(
@@ -208,6 +246,7 @@ else:
 df_sorted = df.sort_values(by="personalized_score", ascending=False)
 
 st.subheader("Top 10 Counties for You")
+
 table_col1, table_col2 = st.columns(2)
 
 for top_county, personalized_score in df_sorted[["description_pop", "personalized_score"]].head(10).values:
@@ -218,9 +257,23 @@ for top_county, personalized_score in df_sorted[["description_pop", "personalize
     with table_col2:
         st.write(f"{round(personalized_score, 2)}/10")
 
-for _ in range(4):
-    st.write(" ")
+df_download = df_sorted[["description_pop", "personalized_score"]].head(100)
 
+@st.cache
+def convert_df(df):
+     return df.to_csv().encode('utf-8')
+
+if df.shape[0] != 0:
+    csv = convert_df(df_download)
+
+    st.download_button(
+        label="Download top 100 counties for you as .csv",
+        data=csv,
+        file_name='personalized_counties.csv',
+        mime='text/csv',
+    )
+
+st.write("Have feedback or a suggestion? You can access our Google Form [here](https://docs.google.com/forms/d/e/1FAIpQLSfFyCmytOpEJ9ihBz31MHPUpxxKjUCrIL85TfxcovO5sHIecA/viewform)!")
 # st.download_button("Download your recommendations", 0)
 
 # with st.expander("Sources"):

@@ -55,8 +55,20 @@ with st.expander("Help & FAQ"):
     and forecasted median housing price are displayed. Please note that the \
     forecasted median housing price is only available for half of the counties.\n
     8) Note the top 10 recommended counties. Download your results as a .csv, \
-    if desired. Please consider that counties filtered out will not be included \
-    in the csv, and consequently, there may not be 100 counties available in the .csv.
+    if desired.
+    """)
+    st.subheader("Q: What do the lifestyle categories mean (Star Gazing, American Dream, etc.)?")
+    st.write("""
+    A:\n
+    **_Star Gazing_**: $\quad$ Extreme low population, extreme rural features, high employment rate, \
+    high religion, low belief in science, high conscientiousness\n
+    **_Country Roads_**: $\quad$ Low population, high rural features, high religion, \
+    low belief in science, low employment rate, high conscientiousness\n
+    **_American Dream_**: $\quad$ Somewhat high urban and population features, somewhat high gender equality, \
+    somewhat high stress tolerance, somewhat high entrepreneurship, high graduation rates, high agreeableness\n
+    **_Big City Life_**: $\quad$ High urban and population features, high gender equality, high stress tolerance, \
+    high entrepreneurship\n
+    **_Best of Both Worlds_**: $\quad$ All social stats near the median, mix of urban and rural features, high conflict awareness, comparable income to American Dream 
     """)
     st.subheader("Q: How did you determine the lifestyle categories?")
     st.write("""
@@ -74,19 +86,23 @@ with st.expander("Help & FAQ"):
 
 factor_colname_dict = {
     "Educated": "educated_norm",
-    "Low Unemployment": "employed_norm",
-    "Entrepreneurship": "Entrepreneurship_sc_norm",
-    "Income Mobility": "Income Mobility_sc_norm",
-    "Income Per Capita": "Income Per Capita_sc_norm",
-    "Left-Wing": "left_wing_norm",
-    "Right-Wing": "right_wing_norm",
-    "Gender Equality": "Gender Equality_sc_norm",
     "Religious": "Religiosity_sc_norm",
-    "Belief in Science": 'Belief In Science_sc_norm',
     "Child-friendly": 'prop_population_under_18_pop_norm',
-    "Working-age People": 'prop_population_18-54_pop_norm',
-    "Seniors": 'prop_population_55+_pop_norm',
+
+    "Low Unemployment": "employed_norm",
+    "Right-Wing": "right_wing_norm",
+    "Professionals-friendly": 'prop_population_18-54_pop_norm',
+    
+    "Entrepreneurship": "Entrepreneurship_sc_norm",
+    "Left-Wing": "left_wing_norm",
+    "Senior-friendly": 'prop_population_55+_pop_norm',
+    
+    "Income Mobility": "Income Mobility_sc_norm",
+    "Gender Equality": "Gender Equality_sc_norm",
     "Single Men": 'prop_male_population_pop_norm',
+
+    "Income Per Capita": "Income Per Capita_sc_norm",
+    "Belief in Science": 'Belief In Science_sc_norm',
     "Single Women": 'prop_female_population_pop_norm'
 }
 
@@ -104,13 +120,19 @@ for i, factor in enumerate(factors):
     factor_dict[factor]["colname"] = factor_colname_dict[factor]
     if i % 3 == 0:
         with col1:
+            if i == 0:
+                st.write("__Economic__")
             factor_dict[factor]["checkbox-bool"] = st.checkbox(factor)
     elif i % 3 == 1:
         with col2:
+            if i == 1:
+                st.write("__Belief-Based__")
             factor_dict[factor]["checkbox-bool"] = st.checkbox(factor)
 
     else:
         with col3:
+            if i == 2:
+                st.write("__Demographic__")
             factor_dict[factor]["checkbox-bool"] = st.checkbox(factor)
 
 selected_factors = [
@@ -189,7 +211,7 @@ big5_importance_scale = {
     "absolutely essential": .075
 }
 
-st.write("Be sure to modify how important each factor is to you:")
+st.write("**Be sure to modify how important each factor is to you:**")
 with st.expander("Factor Importance"):
     for factor in selected_factors:
         factor_dict[factor]["importance"] = importance_scale[st.select_slider(factor, list(importance_scale.keys()))]
@@ -262,16 +284,21 @@ def convert_df(df):
 if df.shape[0] != 0:
     csv = convert_df(df_download)
 
+    num_downloadable_counties = min([100, df.shape[0]])
+
     st.download_button(
-        label="Download top 100 counties for you as .csv",
+        label=f"Download top {num_downloadable_counties} counties for you as .csv",
         data=csv,
         file_name='personalized_counties.csv',
         mime='text/csv',
     )
 
 st.write("Have feedback or a suggestion? You can access our Google Form [here](https://docs.google.com/forms/d/e/1FAIpQLSfFyCmytOpEJ9ihBz31MHPUpxxKjUCrIL85TfxcovO5sHIecA/viewform)!")
-# st.download_button("Download your recommendations", 0)
 
-# with st.expander("Sources"):
-#     st.write("Source1")
-#     st.write("Source2")
+for _ in range(4):
+    st.write("")
+
+with st.expander("Data Sources"):
+    st.write("""Market hotness Realtor data, for Forecasted Median House Prices: [link to data](https://www.realtor.com/research/data/)""")
+    st.write("StatsAmerica demographic, social context data: [link to data](https://www.statsamerica.org/downloads/default.aspx)")
+    st.write("USDA education, unemployment, household income data: [link to data](https://www.ers.usda.gov/data-products/county-level-data-sets/download-data/)")

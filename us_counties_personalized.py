@@ -58,8 +58,6 @@ with st.expander("Help & FAQ"):
     if desired. Please consider that counties filtered out will not be included \
     in the csv, and consequently, there may not be 100 counties available in the .csv.
     """)
-    st.subheader("Q: What do the lifestyle categories mean (Country Roads, American Dream, etc.)?")
-    st.write("A: ??")
     st.subheader("Q: How did you determine the lifestyle categories?")
     st.write("""
     A: These categories are the result of a clustering analysis performed on \

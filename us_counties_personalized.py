@@ -92,8 +92,6 @@ factor_colname_dict = {
     "Single Women": 'prop_female_population_pop_norm'
 }
 
-# factor_colname_dict["Select All"] = list(factor_colname_dict.values())
-
 factors = list(factor_colname_dict.keys())
 
 # fillna with mean (z-score = 0)

@@ -5,7 +5,6 @@
 *price*
 *cluster*
 *normalized*
-cluster_merge_clean_normalized.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
